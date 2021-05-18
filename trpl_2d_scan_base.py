@@ -95,29 +95,31 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
         S = self.settings        
         self.hw = hw = self.app.hardware[S['counting_device']]
         self.hw.settings['connected'] = True
-        self.dev = dev = self.hw.dev
-        
+            
         if self.settings['auto_HistogramBins']:
             self.hw.update_HistogramBins()
-        
+                        
         if S['counting_device'] == 'picoharp':
             self.n_channels = 1            
-            HistogramBins = self.hw.settings['num_hist_channels']
+            self.dev = dev = self.hw.picoharp
+            HistogramBins = self.hw.settings['histogram_channels']
             self.hist_slice = np.s_[0:self.n_channels, 0:HistogramBins]
-            time_trace_map_shape = self.scan_shape + (self.n_channels + HistogramBins)
+            time_trace_map_shape = self.scan_shape + (HistogramBins,)
 
         if S['counting_device'] == 'hydraharp':
+            self.dev = dev = self.hw.dev
             self.n_channels = self.hw.enabled_channels
             self.hist_slice = self.hw.hist_slice
             print(self.hist_slice)
             time_trace_map_shape = self.scan_shape + self.hw.hist_shape
+
         
         self.hw_widgets[self.settings['counting_device']].setDisabled(True)
 
 
         
         self.integrated_count_map_h5 = self.h5_meas_group.create_dataset('integrated_count_map', 
-                                                                   shape=self.scan_shape + (self.hw.n_channels,),
+                                                                   shape=self.scan_shape + (self.n_channels,),
                                                                    dtype=float, 
                                                                    compression='gzip')
         
@@ -184,7 +186,7 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
         self.display_image_map[k,j,i] = hist_data.sum() * 1.0/elapsed_time
 
         if pixel_num == 0:
-            self.display_image_map[:,:,:] = hist_data.sum() * 1.0/elapsed_time
+            self.display_image_map[:,:,:] = hist_data.sum() * 1.0/elapsed_time - 1
 
             self.time_array = self.hw.time_array
             self.h5_meas_group['time_array'] = self.time_array[self.hist_slice[-1]]
@@ -193,6 +195,7 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
             self.infline.setPos([pos_x,0])
             self.display_ready = True
 
+        self.pixel_num = pixel_num
         
     def update_display(self):        
         if self.acquiring_dark_histogram:
@@ -200,13 +203,16 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
             for i in range(self.n_channels):
                 self.lifetime_plot_curves[i].setData(self.time_array*1e-12, self.dark_hist_data[i,:])
         
-        elif self.display_ready:            
-            self.lifetime_plot.setTitle('collecting pixels ....')
+        elif self.display_ready:                       
+            n = self.settings['n_frames'] * self.Npixels
+            
+            self.lifetime_plot.setTitle('collecting pixel {} of {} total time: {} min'.format(self.pixel_num + 1, n, n*self.hw.settings['Tacq']/60))
             for i in range(self.n_channels):
                 self.lifetime_plot_curves[i].setData(self.time_array*1e-12, self.histogram_data[i,:])
 
         else:
             self.lifetime_plot.setTitle('display_ready=False / scan done')
+                    
             
 
     def aquire_histogram(self):
