@@ -2,7 +2,7 @@
 Created on 05/20/2019
 
 Base measurement for TRPL scan with
--picoharp 
+-picoharp (not tested)
 -hydraharp (tested with 2 input channels).
 
 see example of use bellow bellow
@@ -80,7 +80,6 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
         self.settings.counting_device.change_choice_list(self.hw_widgets.keys())
         self.settings.counting_device.add_listener(self.on_change_counting_device)
         self.settings.acq_mode.add_listener(self.on_change_acq_mode)
-        
 
         # Plots
         BaseRaster2DSlowScan.setup_figure(self)
@@ -197,7 +196,8 @@ class TRPL2DScanBase(BaseRaster2DSlowScan):
 
         self.pixel_num = pixel_num
         
-    def update_display(self):        
+    def update_display(self):
+        BaseRaster2DSlowScan.update_display(self)
         if self.acquiring_dark_histogram:
             self.lifetime_plot.setTitle('Acquiring dark histograms ...')
             for i in range(self.n_channels):
@@ -272,35 +272,27 @@ class DummyStageBase2DScan(BaseRaster2DSlowScan):
         
     #def setup(self)
     #self.stage = self.hardware['dummy_stage']
-
         
-
-#Example of usage: Replace DummyStageBase2DScan with a derivative of BaseRaster2DScan containing 
-# instructions
-class TRPL2DScan(TRPL2DScanBase):
+#Example of usage: 
+class DummyStageTRPL2DScan(DummyStageBase2DScan, TRPL2DScanBase):
     
     name = 'trpl_2d_scan'
         
     def __init__(self, app):
         DummyStageBase2DScan.__init__(self, app)
-        TRPL2DScanBase.__init__(self, app, None)
     
     def setup(self):
         DummyStageBase2DScan.setup(self)
         TRPL2DScanBase.setup(self)
 
     def pre_scan_setup(self):
-        DummyStageBase2DScan.pre_scan_setup(self)
         TRPL2DScanBase.pre_scan_setup(self)
     
     def collect_pixel(self, pixel_num, k, j, i):
-        DummyStageBase2DScan.collect_pixel(self, pixel_num, k, j, i)   
-        TRPL2DScanBase.collect_pixel(self, pixel_num, k, j, i)
+        TRPL2DScanBase.collect_pixel(self, pixel_num, k, j, i)   
 
     def post_scan_cleanup(self):
-        DummyStageBase2DScan.post_scan_cleanup(self)
         TRPL2DScanBase.post_scan_cleanup(self)
         
     def update_display(self):
-        DummyStageBase2DScan.update_display(self)
         TRPL2DScanBase.update_display(self)
