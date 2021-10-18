@@ -8,7 +8,7 @@ import numpy as np
 import pyqtgraph as pg
 import time
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
-from matplotlib.backends.qt_compat import QtWidgets
+from qtpy import QtWidgets
 
 
 class HydraHarpOptimizerMeasure(Measurement):
